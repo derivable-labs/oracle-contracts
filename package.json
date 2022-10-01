@@ -1,4 +1,8 @@
 {
+  "name": "@derivable/oracle",
+  "description": "Oracle library for Derivable",
+  "version": "1.0.0",
+  "license": "MIT",
   "scripts": {
     "prettier": "prettier --write **/*.sol",
     "compile": "hardhat compile",
@@ -9,8 +13,7 @@
   "dependencies": {
     "@uniswap/lib": "^4.0.1-alpha",
     "@uniswap/v2-core": "^1.0.1",
-    "@uniswap/v2-periphery": "^1.1.0-beta.0",
-    "hardhat": "^2.11.2"
+    "@uniswap/v2-periphery": "^1.1.0-beta.0"
   },
   "devDependencies": {
     "@ethersproject/abi": "^5.4.7",
@@ -24,6 +27,7 @@
     "@typechain/hardhat": "^6.1.2",
     "chai": "^4.2.0",
     "ethers": "^5.4.7",
+    "hardhat": "^2.11.2",
     "hardhat-gas-reporter": "^1.0.8",
     "solidity-coverage": "^0.8.0",
     "typechain": "^8.1.0"
