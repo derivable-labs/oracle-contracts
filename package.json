@@ -1,5 +1,15 @@
 {
+  "scripts": {
+    "prettier": "prettier --write **/*.sol",
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "testnet": "hardhat run --network testnet",
+    "mainnet": "hardhat run --network mainnet"
+  },
   "dependencies": {
+    "@uniswap/lib": "^4.0.1-alpha",
+    "@uniswap/v2-core": "^1.0.1",
+    "@uniswap/v2-periphery": "^1.1.0-beta.0",
     "hardhat": "^2.11.2"
   },
   "devDependencies": {
