@@ -21,22 +21,25 @@ library OracleLibrary {
         uint quoteTokenIndex
     )
         public
-        returns (Price memory price)
+        returns (
+            Price memory twap,
+            Price memory naive
+        )
     {
         if (self.blockTimestamp == block.timestamp) {
-            return price;   // return empty price if no time has passed
+            return (twap, naive);   // return empty price if no time has passed
         }
 
         (uint price0Cumulative, uint price1Cumulative, uint32 blockTimestamp) =
             UniswapV2OracleLibrary.currentCumulativePrices(address(pool));
 
         if (blockTimestamp == self.blockTimestamp) {
-            return price;   // return empty price if the price is up-to-date
+            return (twap, naive);   // return empty price if the price is up-to-date
         }
 
         uint basePriceCumulative = quoteTokenIndex == 0 ? price1Cumulative : price0Cumulative;
         uint basePrice = (basePriceCumulative - self.basePriceCumulative) / (blockTimestamp - self.blockTimestamp);
-        price.base = FixedPoint.uq112x112(uint224(basePrice));
+        twap.base = FixedPoint.uq112x112(uint224(basePrice));
 
         uint256 totalSupply = pool.totalSupply();
         (uint r0, uint r1, ) = pool.getReserves();
@@ -44,10 +47,14 @@ library OracleLibrary {
         // k = r0 * r1
         // quotePrice = 1
         /// 2 * sqrt(basePrice * k) / supply
-        price.LP = FixedPoint.fraction(2 * Math.sqrt(r0 * r1), totalSupply).muluq(price.base.sqrt());
+        twap.LP = FixedPoint.fraction(2 * Math.sqrt(r0 * r1), totalSupply).muluq(twap.base.sqrt());
 
         // sync
         self.basePriceCumulative = uint224(basePriceCumulative);    // TODO: overflow?
         self.blockTimestamp = blockTimestamp;
+
+        (uint rb, uint rq) = quoteTokenIndex == 0 ? (r1, r0) : (r0, r1);
+        naive.base = FixedPoint.fraction(rq, rb);
+        naive.LP = FixedPoint.fraction(2 * rq, totalSupply);
     }
 }
