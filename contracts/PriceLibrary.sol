@@ -15,4 +15,11 @@ library PriceLibrary {
     function isEmpty(OraclePrice memory self) public pure returns (bool) {
         return self.base._x == 0 && self.LP._x == 0;
     }
+
+    function divuq(OraclePrice memory self, FixedPoint.uq112x112 memory scale) public pure returns (OraclePrice memory) {
+        return OraclePrice(
+            self.base.divuq(scale),
+            self.LP.divuq(scale.sqrt())
+        );
+    }
 }
