@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
-import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
-import "@uniswap/v2-periphery/contracts/libraries/UniswapV2OracleLibrary.sol";
+import './@uniswap/lib/contracts/libraries/FixedPoint.sol';
+import "./@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
+import "./@uniswap/v2-periphery/contracts/libraries/UniswapV2OracleLibrary.sol";
 import "./PriceLibrary.sol";
 import "./Math.sol";
 
@@ -22,8 +22,8 @@ library OracleLibrary {
     )
         public
         returns (
-            Price memory twap,
-            Price memory naive
+            OraclePrice memory twap,
+            OraclePrice memory naive
         )
     {
         if (self.blockTimestamp == block.timestamp) {

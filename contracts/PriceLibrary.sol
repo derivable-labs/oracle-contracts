@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
+import './@uniswap/lib/contracts/libraries/FixedPoint.sol';
 
 struct OraclePrice {
     FixedPoint.uq112x112 base;

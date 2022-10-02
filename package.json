@@ -11,10 +11,7 @@
     "mainnet": "hardhat run --network mainnet"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.7.3",
-    "@uniswap/lib": "^4.0.1-alpha",
-    "@uniswap/v2-core": "^1.0.1",
-    "@uniswap/v2-periphery": "^1.1.0-beta.0"
+    "@openzeppelin/contracts": "^4.7.3"
   },
   "devDependencies": {
     "@ethersproject/abi": "^5.4.7",
