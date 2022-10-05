@@ -41,7 +41,7 @@ library OracleLibrary {
         uint256 totalSupply = pool.totalSupply();
         (uint r0, uint r1, ) = pool.getReserves();
 
-        console.log(totalSupply);
+        twap.LP = FixedPoint.fraction(2 * Math.sqrt(r0 * r1), totalSupply).muluq(twap.base.sqrt());
 
         // sync
         self.basePriceCumulative = uint224(basePriceCumulative);    // TODO: overflow?

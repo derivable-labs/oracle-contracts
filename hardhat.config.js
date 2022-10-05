@@ -9,11 +9,23 @@ module.exports = {
       },
       {
         version: "0.5.16",
-        setting: {}
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 999999,
+          },
+        }
+      },
+      {
+        version: "0.6.6",
       },
     ],
   },
-
+  networks: {
+    hardhat: {
+      allowUnlimitedContractSize: true
+    },
+  },
   paths: {
     sources: "./contracts",
     tests: "./test",
