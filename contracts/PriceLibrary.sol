@@ -16,6 +16,13 @@ library PriceLibrary {
         return self.base._x == 0 && self.LP._x == 0;
     }
 
+    function muluq(OraclePrice memory self, FixedPoint.uq112x112 memory scale) public pure returns (OraclePrice memory) {
+        return OraclePrice(
+            self.base.muluq(scale),
+            self.LP.muluq(scale.sqrt())
+        );
+    }
+
     function divuq(OraclePrice memory self, FixedPoint.uq112x112 memory scale) public pure returns (OraclePrice memory) {
         return OraclePrice(
             self.base.divuq(scale),
