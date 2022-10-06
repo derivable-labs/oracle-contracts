@@ -21,7 +21,7 @@ library FixedPoint {
 
     uint8 public constant RESOLUTION = 112;
     uint256 public constant Q112 = 0x10000000000000000000000000000; // 2**112
-    uint256 private constant Q224 = 0x100000000000000000000000000000000000000000000000000000000; // 2**224
+    uint256 public constant Q224 = 0x100000000000000000000000000000000000000000000000000000000; // 2**224
     uint256 private constant LOWER_MASK = 0xffffffffffffffffffffffffffff; // decimal of UQ*x112 (lower 112 bits)
 
     // encode a uint112 as a UQ112x112
