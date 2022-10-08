@@ -16,11 +16,11 @@ const opts = {
   gasLimit: 30000000
 }
 
-describe("Lock", function () {
+describe("Price Oracle", function () {
   // We define a fixture to reuse the same setup in every test.
   // We use loadFixture to run this setup once, snapshot that state,
   // and reset Hardhat Network to that snapshot in every test.
-  async function deployOneYearLockFixture() {
+  async function deployPriceOracle() {
     const [owner, otherAccount] = await ethers.getSigners();
 
     // var provider = new ethers.providers.WebSocketProvider("ws://localhost:8545");
@@ -49,10 +49,10 @@ describe("Lock", function () {
     await uniswapRouter.addLiquidity(
       token0.address,
       token1.address,
-      numberToWei(10),
-      numberToWei(10),
-      '1000000000000000',
-      '1000000000000000',
+      '9250619149041644050058396',
+      '6986963283651477901852',
+      '0',
+      '0',
       owner.address,
       new Date().getTime() + 100000,
       opts
@@ -110,7 +110,7 @@ describe("Lock", function () {
   }
 
   describe("Deployment", function () {
-    it("when price is increased, the difference of twap price < difference of naive price after a little time", async function () {
+    it("TWAP: price increased in a short time", async function () {
       const {
         token0,
         token1,
@@ -119,11 +119,11 @@ describe("Lock", function () {
         uniswapRouter,
         testpriceContract,
         initPrice
-      } = await loadFixture(deployOneYearLockFixture);
+      } = await loadFixture(deployPriceOracle);
       await time.increase(100)
       // swap to change price
       const tx = await uniswapRouter.swapExactTokensForTokens(
-        numberToWei(10),
+        numberToWei(10000000),
         0,
         [token0.address, token1.address],
         owner.address,
@@ -140,12 +140,13 @@ describe("Lock", function () {
       expect(getDiffPercent(initPrice.twap_base, price2.twap_base)).to.lessThan(getDiffPercent(initPrice.naive_base, price2.naive_base));
       expect(getDiffPercent(initPrice.twap_LP, price2.twap_LP)).to.lessThan(getDiffPercent(initPrice.naive_LP, price2.naive_LP));
 
-      // check the price is increased
-      expect(initPrice.naive_base).to.lessThan(price2.naive_base)
-      expect(initPrice.naive_LP).to.lessThan(price2.naive_LP)
+      expect(price2.twap_base).to.equal(1713.426);
+      expect(price2.twap_LP).to.equal(82.851);
+      expect(price2.naive_base).to.equal(5724.701);
+      expect(price2.naive_LP).to.equal( 151.441);
     });
 
-    it("when price is increased, the difference of twap price < difference of naive price after many time", async function () {
+    it("TWAP: price increased in a long time", async function () {
       const {
         token0,
         token1,
@@ -154,12 +155,12 @@ describe("Lock", function () {
         uniswapRouter,
         testpriceContract,
         initPrice
-      } = await loadFixture(deployOneYearLockFixture);
+      } = await loadFixture(deployPriceOracle);
       await time.increase(100)
 
       // swap to change price
       const tx1 = await uniswapRouter.swapExactTokensForTokens(
-        numberToWei(10),
+        numberToWei(10000000),
         0,
         [token0.address, token1.address],
         owner.address,
@@ -176,12 +177,13 @@ describe("Lock", function () {
       expect(getDiffPercent(initPrice.twap_base, price2.twap_base)).to.lessThan(getDiffPercent(initPrice.naive_base, price2.naive_base));
       expect(getDiffPercent(initPrice.twap_LP, price2.twap_LP)).to.lessThan(getDiffPercent(initPrice.naive_LP, price2.naive_LP));
 
-      // check the price is increased
-      expect(initPrice.naive_base).to.lessThan(price2.naive_base)
-      expect(initPrice.naive_LP).to.lessThan(price2.naive_LP)
+      expect(price2.twap_base).to.equal(5720.172);
+      expect(price2.twap_LP).to.equal(151.381);
+      expect(price2.naive_base).to.equal(5724.701);
+      expect(price2.naive_LP).to.equal( 151.441);
     });
 
-    it("when price is increased, the difference of twap price after a little time < difference of twap price after many time", async function () {
+    it("TWAP: price decreased in a short time", async function () {
       const {
         token0,
         token1,
@@ -190,55 +192,11 @@ describe("Lock", function () {
         uniswapRouter,
         testpriceContract,
         initPrice
-      } = await loadFixture(deployOneYearLockFixture);
-      await time.increase(100)
-
-      // swap to change price
-      const tx1 = await uniswapRouter.swapExactTokensForTokens(
-        numberToWei(10),
-        0,
-        [token0.address, token1.address],
-        owner.address,
-        new Date().getTime() + 10000,
-        opts
-      )
-      await tx1.wait(1)
-
-      // get price after 10s
-      await time.increase(100);
-      const price2 = formatFetchPriceResponse(await testpriceContract.callStatic.testFetchPrice(pairAddresses, token0.address));
-
-
-      // get price after 1000000s
-      await time.increase(1000000);
-      const price3 = formatFetchPriceResponse(await testpriceContract.callStatic.testFetchPrice(pairAddresses, token0.address));
-
-
-      // check the difference of twap price < difference of naive price
-      expect(getDiffPercent(initPrice.twap_base, price2.twap_base)).to.lessThan(getDiffPercent(initPrice.twap_base, price3.twap_base));
-      expect(getDiffPercent(initPrice.twap_LP, price2.twap_LP)).to.lessThan(getDiffPercent(initPrice.twap_LP, price3.twap_LP));
-
-      // check the price is increased
-      expect(initPrice.naive_base).to.lessThan(price2.naive_base)
-      expect(initPrice.naive_LP).to.lessThan(price2.naive_LP)
-      expect(initPrice.naive_base).to.lessThan(price3.naive_base)
-      expect(initPrice.naive_LP).to.lessThan(price3.naive_LP)
-    });
-
-    it("when price is decreased, the difference of twap price < difference of naive price after a little time", async function () {
-      const {
-        token0,
-        token1,
-        owner,
-        pairAddresses,
-        uniswapRouter,
-        testpriceContract,
-        initPrice
-      } = await loadFixture(deployOneYearLockFixture);
+      } = await loadFixture(deployPriceOracle);
       await time.increase(100)
       // swap to change price
       const tx = await uniswapRouter.swapExactTokensForTokens(
-        numberToWei(10),
+        numberToWei(1000),
         0,
         [token1.address, token0.address],
         owner.address,
@@ -255,12 +213,13 @@ describe("Lock", function () {
       expect(getDiffPercent(initPrice.twap_base, price2.twap_base)).to.lessThan(getDiffPercent(initPrice.naive_base, price2.naive_base));
       expect(getDiffPercent(initPrice.twap_LP, price2.twap_LP)).to.lessThan(getDiffPercent(initPrice.naive_LP, price2.naive_LP));
 
-      // check the price is decreased
-      expect(initPrice.naive_base).to.greaterThan(price2.naive_base)
-      expect(initPrice.naive_LP).to.greaterThan(price2.naive_LP)
+      expect(price2.twap_base).to.equal(1296.513);
+      expect(price2.twap_LP).to.equal(72.027);
+      expect(price2.naive_base).to.equal(1013.582);
+      expect(price2.naive_LP).to.equal( 63.685);
     });
 
-    it("when price is decreased, the difference of twap price < difference of naive price after many times", async function () {
+    it("TWAP: price decreased in a long time", async function () {
       const {
         token0,
         token1,
@@ -269,12 +228,12 @@ describe("Lock", function () {
         uniswapRouter,
         testpriceContract,
         initPrice
-      } = await loadFixture(deployOneYearLockFixture);
+      } = await loadFixture(deployPriceOracle);
       await time.increase(100)
 
       // swap to change price
       const tx1 = await uniswapRouter.swapExactTokensForTokens(
-        numberToWei(10),
+        numberToWei(1000),
         0,
         [token1.address, token0.address],
         owner.address,
@@ -287,56 +246,10 @@ describe("Lock", function () {
       await time.increase(100000);
       const price2 = formatFetchPriceResponse(await testpriceContract.callStatic.testFetchPrice(pairAddresses, token0.address));
 
-      // check the difference of twap price < difference of naive price
-      expect(getDiffPercent(initPrice.twap_base, price2.twap_base)).to.lessThan(getDiffPercent(initPrice.naive_base, price2.naive_base));
-      expect(getDiffPercent(initPrice.twap_LP, price2.twap_LP)).to.lessThan(getDiffPercent(initPrice.naive_LP, price2.naive_LP));
-
-      // check the price is decreased
-      expect(initPrice.naive_base).to.greaterThan(price2.naive_base)
-      expect(initPrice.naive_LP).to.greaterThan(price2.naive_LP)
-    });
-
-    it("when price is decreased, the difference of twap price after a little time < difference of twap price after many time", async function () {
-      const {
-        token0,
-        token1,
-        owner,
-        pairAddresses,
-        uniswapRouter,
-        testpriceContract,
-        initPrice
-      } = await loadFixture(deployOneYearLockFixture);
-      await time.increase(100)
-
-      // swap to change price
-      const tx1 = await uniswapRouter.swapExactTokensForTokens(
-        numberToWei(10),
-        0,
-        [token1.address, token0.address],
-        owner.address,
-        new Date().getTime() + 10000,
-        opts
-      )
-      await tx1.wait(1)
-
-      // get price after 10s
-      await time.increase(100);
-      const price2 = formatFetchPriceResponse(await testpriceContract.callStatic.testFetchPrice(pairAddresses, token0.address));
-
-
-      // get price after 1000000s
-      await time.increase(1000000);
-      const price3 = formatFetchPriceResponse(await testpriceContract.callStatic.testFetchPrice(pairAddresses, token0.address));
-
-      // check the difference of twap price < difference of naive price
-      expect(getDiffPercent(initPrice.twap_base, price2.twap_base)).to.lessThan(getDiffPercent(initPrice.twap_base, price3.twap_base));
-      expect(getDiffPercent(initPrice.twap_LP, price2.twap_LP)).to.lessThan(getDiffPercent(initPrice.twap_LP, price3.twap_LP));
-
-      // check the price is decreased
-      expect(initPrice.naive_base).to.greaterThan(price2.naive_base)
-      expect(initPrice.naive_LP).to.greaterThan(price2.naive_LP)
-      expect(initPrice.naive_base).to.greaterThan(price3.naive_base)
-      expect(initPrice.naive_LP).to.greaterThan(price3.naive_LP)
+      expect(price2.twap_base).to.equal(1013.901);
+      expect(price2.twap_LP).to.equal(63.695);
+      expect(price2.naive_base).to.equal(1013.582);
+      expect(price2.naive_LP).to.equal( 63.685);
     });
   });
 });
