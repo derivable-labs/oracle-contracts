@@ -11,9 +11,9 @@ import "hardhat/console.sol";
     @dev This contract supports fetching price of one Token using Uniswap Pool (UniswapV2Pair)
 */
 contract TestPrice {
-    using OracleLibrary for PriceLibrary.OracleStore;
+    using OracleLibrary for OracleStore;
 
-    mapping(IUniswapV2Pair => PriceLibrary.OracleStore) public poolsStore;
+    mapping(IUniswapV2Pair => OracleStore) public poolsStore;
 
     function initPoolStore(IUniswapV2Pair pool, uint quoteTokenIndex) private {
         (uint price0Cumulative, uint price1Cumulative, uint32 blockTimestamp) =
@@ -27,8 +27,8 @@ contract TestPrice {
     }
 
     function testFetchPrice(IUniswapV2Pair pool, address quoteToken) public returns (
-        PriceLibrary.OraclePrice memory twap,
-        PriceLibrary.OraclePrice memory naive
+        OraclePrice memory twap,
+        OraclePrice memory naive
 
     ){
         address token0 = IUniswapV2Pair(pool).token0();

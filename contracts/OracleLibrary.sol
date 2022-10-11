@@ -8,19 +8,23 @@ import "./PriceLibrary.sol";
 import "./Math.sol";
 import "hardhat/console.sol";
 
+struct OracleStore {
+    uint224 basePriceCumulative;
+    uint32 blockTimestamp;
+}
+
 library OracleLibrary {
     using FixedPoint for FixedPoint.uq112x112;
 
     function fetchPrice(
-        PriceLibrary.OracleStore storage self,
+        OracleStore storage self,
         IUniswapV2Pair pool,
         uint quoteTokenIndex
     )
         public
         returns (
-
-            PriceLibrary.OraclePrice memory twap,
-            PriceLibrary.OraclePrice memory naive
+            OraclePrice memory twap,
+            OraclePrice memory naive
         )
     {
         if (self.blockTimestamp == block.timestamp) {
