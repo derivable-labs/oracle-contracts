@@ -5,6 +5,14 @@ pragma solidity ^0.8.9;
 // Copy from "@uniswap/v2-core/contracts/libraries/Math.sol" and change solidity version
 
 library Math {
+    function abs(int x) internal pure returns (uint z) {
+        z = uint(x >= 0 ? x : -x);
+    }
+
+    function max(uint x, uint y) internal pure returns (uint z) {
+        z = x > y ? x : y;
+    }
+
     function min(uint x, uint y) internal pure returns (uint z) {
         z = x < y ? x : y;
     }
