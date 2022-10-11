@@ -40,6 +40,28 @@ library OracleLibrary {
             OraclePrice memory naive
         )
     {
+        OracleStore memory updated;
+        (twap, naive, updated) = peekPrice(self, pair, baseToken0);
+        if (self.blockTimestamp < updated.blockTimestamp) {
+            self.basePriceCumulative = updated.basePriceCumulative;
+            self.blockTimestamp = updated.blockTimestamp;
+            self.baseTWAP = updated.baseTWAP;
+        }
+        return (twap, naive);
+    }
+
+    function peekPrice(
+        OracleStore memory self,
+        address pair,
+        bool baseToken0
+    )
+        internal view
+        returns (
+            OraclePrice memory twap,
+            OraclePrice memory naive,
+            OracleStore memory updated
+        )
+    {
         require(self.blockTimestamp > 0, "uninitialized");
         uint basePriceCumulative;
 
@@ -54,9 +76,11 @@ library OracleLibrary {
                     (basePriceCumulative - self.basePriceCumulative) /
                     (blockTimestamp - self.blockTimestamp)
                 ));
-                self.basePriceCumulative = basePriceCumulative;
-                self.baseTWAP = twap.base;
-                self.blockTimestamp = blockTimestamp;
+                updated = OracleStore(
+                    basePriceCumulative,
+                    blockTimestamp,
+                    twap.base
+                );
             }
         } else {
             basePriceCumulative = self.basePriceCumulative;
