@@ -20,11 +20,11 @@ library OracleLibrary {
     function init(
         OracleStore storage self,
         IUniswapV2Pair pair,
-        uint baseTokenIndex
+        bool baseToken0
     ) internal {
         require(self.blockTimestamp == 0, "initialized");
         (uint priceCumulative, uint32 blockTimestamp) =
-            UniswapV2OracleLibrary.currentCumulativePrice(address(pair), baseTokenIndex);
+            UniswapV2OracleLibrary.currentCumulativePrice(address(pair), baseToken0);
         self.basePriceCumulative = uint224(priceCumulative);
         self.blockTimestamp = blockTimestamp;
     }
@@ -32,9 +32,9 @@ library OracleLibrary {
     function fetchPrice(
         OracleStore storage self,
         IUniswapV2Pair pair,
-        uint baseTokenIndex
+        bool baseToken0
     )
-        public
+        internal
         returns (
             OraclePrice memory twap,
             OraclePrice memory naive
@@ -46,7 +46,7 @@ library OracleLibrary {
         if (self.blockTimestamp < block.timestamp) {
             uint32 blockTimestamp;
             (basePriceCumulative, blockTimestamp) =
-                UniswapV2OracleLibrary.currentCumulativePrice(address(pair), baseTokenIndex);
+                UniswapV2OracleLibrary.currentCumulativePrice(address(pair), baseToken0);
             if (blockTimestamp == self.blockTimestamp) {
                 twap.base = self.baseTWAP;
             } else {
@@ -68,7 +68,7 @@ library OracleLibrary {
 
         twap.LP = FixedPoint.fraction(2 * Math.sqrt(r0 * r1), totalSupply).muluq(twap.base.sqrt());
 
-        (uint rb, uint rq) = baseTokenIndex == 0 ? (r0, r1) : (r1, r0);
+        (uint rb, uint rq) = baseToken0 ? (r0, r1) : (r1, r0);
         naive.base = FixedPoint.fraction(rq, rb);
         naive.LP = FixedPoint.fraction(2 * rq, totalSupply);
     }

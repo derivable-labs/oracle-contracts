@@ -57,15 +57,10 @@ describe("Price Oracle", function () {
     const pairAddresses = await uniswapFactory.allPairs(0)
 
     // deploy test price contract
-    const Lib = await ethers.getContractFactory("OracleLibrary", signer);
+    const Lib = await ethers.getContractFactory("OracleLibrary");
     const lib = await Lib.deploy();
     await lib.deployed();
-    const TestPrice = await ethers.getContractFactory("TestPrice", {
-      signer,
-      libraries: {
-        OracleLibrary: lib.address,
-      },
-    });
+    const TestPrice = await ethers.getContractFactory("TestPrice");
     const testpriceContract = await TestPrice.deploy()
     await testpriceContract.deployed();
 

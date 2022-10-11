@@ -15,24 +15,16 @@ contract TestPrice {
 
     mapping(IUniswapV2Pair => OracleStore) public poolsStore;
 
-    function initPoolStore(IUniswapV2Pair pool, uint baseTokenIndex) private {
-        poolsStore[pool].init(pool, baseTokenIndex);
-    }
-
     function testFetchPrice(IUniswapV2Pair pool, address baseToken) public returns (
         OraclePrice memory twap,
         OraclePrice memory naive
     ){
         address token0 = IUniswapV2Pair(pool).token0();
-        uint baseTokenIndex = 1;
-        if (token0 == baseToken) {
-            baseTokenIndex = 0;
-        }
 
         if(poolsStore[pool].blockTimestamp == 0) {
-            initPoolStore(pool, baseTokenIndex);
+            poolsStore[pool].init(pool, token0 == baseToken);
         }
 
-        (twap, naive) = OracleLibrary.fetchPrice(poolsStore[pool], pool, baseTokenIndex);
+        (twap, naive) = poolsStore[pool].fetchPrice(pool, token0 == baseToken);
     }
 }
