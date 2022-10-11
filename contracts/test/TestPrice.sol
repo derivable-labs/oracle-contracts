@@ -15,32 +15,24 @@ contract TestPrice {
 
     mapping(IUniswapV2Pair => OracleStore) public poolsStore;
 
-    function initPoolStore(IUniswapV2Pair pool, uint quoteTokenIndex) private {
-        (uint price0Cumulative, uint price1Cumulative, uint32 blockTimestamp) =
-        UniswapV2OracleLibrary.currentCumulativePrices(address(pool));
-
-        poolsStore[pool].blockTimestamp = blockTimestamp;
-
-        uint basePriceCumulative = quoteTokenIndex == 0 ? price1Cumulative : price0Cumulative;
-
-        poolsStore[pool].basePriceCumulative = uint224(basePriceCumulative);
+    function initPoolStore(IUniswapV2Pair pool, uint baseTokenIndex) private {
+        poolsStore[pool].init(pool, baseTokenIndex);
     }
 
-    function testFetchPrice(IUniswapV2Pair pool, address quoteToken) public returns (
+    function testFetchPrice(IUniswapV2Pair pool, address baseToken) public returns (
         OraclePrice memory twap,
         OraclePrice memory naive
-
     ){
         address token0 = IUniswapV2Pair(pool).token0();
-        uint quoteTokenIndex = 1;
-        if(token0 == quoteToken) {
-            quoteTokenIndex = 0;
+        uint baseTokenIndex = 1;
+        if (token0 == baseToken) {
+            baseTokenIndex = 0;
         }
 
         if(poolsStore[pool].blockTimestamp == 0) {
-            initPoolStore(pool, quoteTokenIndex);
+            initPoolStore(pool, baseTokenIndex);
         }
 
-        (twap, naive) = OracleLibrary.fetchPrice(poolsStore[pool], pool, quoteTokenIndex);
+        (twap, naive) = OracleLibrary.fetchPrice(poolsStore[pool], pool, baseTokenIndex);
     }
 }

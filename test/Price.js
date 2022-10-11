@@ -73,12 +73,12 @@ describe("Price Oracle", function () {
     eth.approve(uniswapRouter.address, LARGE_VALUE);
 
     // init pool store
-    const tx = await testpriceContract.testFetchPrice(pairAddresses, busd.address);
+    const tx = await testpriceContract.testFetchPrice(pairAddresses, eth.address);
     await tx.wait(1);
 
     // get price before update price
     // base price = 1, naive price = 1, cumulative price = 1
-    const initPrice = formatFetchPriceResponse(await testpriceContract.callStatic.testFetchPrice(pairAddresses, busd.address));
+    const initPrice = formatFetchPriceResponse(await testpriceContract.callStatic.testFetchPrice(pairAddresses, eth.address));
 
     const poolContract = new ethers.Contract(pairAddresses, require("@uniswap/v2-core/build/UniswapV2Pair.json").abi, signer)
 
@@ -155,7 +155,7 @@ describe("Price Oracle", function () {
 
       // get price after 10s
       await time.increase(10);
-      const price2 = formatFetchPriceResponse(await testpriceContract.callStatic.testFetchPrice(pairAddresses, busd.address));
+      const price2 = formatFetchPriceResponse(await testpriceContract.callStatic.testFetchPrice(pairAddresses, eth.address));
 
       // check the difference of twap price < difference of naive price
       expect(getDiffPercent(initPrice.twap_base, price2.twap_base)).to.lessThan(getDiffPercent(initPrice.naive_base, price2.naive_base));
@@ -190,7 +190,7 @@ describe("Price Oracle", function () {
 
       // get price after 10s
       await time.increase(100000);
-      const price2 = formatFetchPriceResponse(await testpriceContract.callStatic.testFetchPrice(pairAddresses, busd.address));
+      const price2 = formatFetchPriceResponse(await testpriceContract.callStatic.testFetchPrice(pairAddresses, eth.address));
 
       // check the difference of twap price < difference of naive price
       expect(getDiffPercent(initPrice.twap_base, price2.twap_base)).to.lessThan(getDiffPercent(initPrice.naive_base, price2.naive_base));
@@ -224,7 +224,7 @@ describe("Price Oracle", function () {
 
       // get price after 10s
       await time.increase(10);
-      const price2 = formatFetchPriceResponse(await testpriceContract.callStatic.testFetchPrice(pairAddresses, busd.address));
+      const price2 = formatFetchPriceResponse(await testpriceContract.callStatic.testFetchPrice(pairAddresses, eth.address));
 
       // check the difference of twap price < difference of naive price
       expect(getDiffPercent(initPrice.twap_base, price2.twap_base)).to.lessThan(getDiffPercent(initPrice.naive_base, price2.naive_base));
@@ -258,7 +258,7 @@ describe("Price Oracle", function () {
 
       // get price after 10s
       await time.increase(100000);
-      const price2 = formatFetchPriceResponse(await testpriceContract.callStatic.testFetchPrice(pairAddresses, busd.address));
+      const price2 = formatFetchPriceResponse(await testpriceContract.callStatic.testFetchPrice(pairAddresses, eth.address));
 
       expect(price2.twap_base).to.equal(700.642);
       expect(price2.twap_LP).to.equal(52.96);
