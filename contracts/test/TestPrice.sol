@@ -19,7 +19,7 @@ contract TestPrice {
         (uint price0Cumulative, uint price1Cumulative, uint32 blockTimestamp) =
         UniswapV2OracleLibrary.currentCumulativePrices(address(pool));
 
-        poolsStore[pool].blockTimestamp = uint32(block.timestamp);
+        poolsStore[pool].blockTimestamp = blockTimestamp;
 
         uint basePriceCumulative = quoteTokenIndex == 0 ? price1Cumulative : price0Cumulative;
 
