@@ -13,9 +13,9 @@ import "hardhat/console.sol";
 contract TestPrice {
     using OracleLibrary for OracleStore;
 
-    mapping(IUniswapV2Pair => OracleStore) public poolsStore;
+    mapping(address => OracleStore) public poolsStore;
 
-    function testFetchPrice(IUniswapV2Pair pool, address baseToken) public returns (
+    function testFetchPrice(address pool, address baseToken) public returns (
         OraclePrice memory twap,
         OraclePrice memory naive
     ){
