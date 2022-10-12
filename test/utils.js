@@ -23,8 +23,19 @@ const calculateSwapToPrice = ({r0, r1, token0, token1}, targetPrice, quoteToken)
     const c2 = targetPrice.mul(rq).mul(rb).mul(1000).div(numberToWei(1))
 
     const {x1, x2} = quadraticEquation(a, b, c1.sub(c2))
+    let amount = x1.isNegative() ? x2 : x1
+    let amount1 = bn(1)
+    while(1) {
+      const price = getPriceAfterSwap(rq, rb, amount.add(amount1))
+      if(price.gt(targetPrice)) {
+        break
+      } else {
+        amount1 = amount1.mul(2)
+      }
+    }
+
     return {
-      amount: x1.isNegative() ? x2 : x1,
+      amount: amount.add(amount1),
       tokenInput: quoteToken === token0 ? token0 : token1
     }
 
@@ -39,6 +50,15 @@ const calculateSwapToPrice = ({r0, r1, token0, token1}, targetPrice, quoteToken)
       tokenInput: quoteToken === token0 ? token1 : token0
     }
   }
+}
+
+function getPriceAfterSwap(rI, rO, amountIn, tokenInIsQuote = true) {
+  const amountInWithFee = amountIn.mul(997);
+  const amountOut = amountInWithFee.mul(rO).div(rI.mul(1000).add(amountInWithFee));
+  return tokenInIsQuote ?
+    rI.add(amountIn).mul(numberToWei(1)).div(rO.sub(amountOut))
+    :
+    rO.add(amountOut).mul(numberToWei(1)).div(rI.sub(amountIn))
 }
 
 function sqrt(value) {
