@@ -131,6 +131,7 @@ describe("Price Oracle", function () {
     it("TWAP: price increased in a short time", async function () {
       const {
         busd,
+        eth,
         owner,
         pairAddresses,
         uniswapRouter,
@@ -165,6 +166,7 @@ describe("Price Oracle", function () {
     it("TWAP: price increased in a long time", async function () {
       const {
         busd,
+        eth,
         owner,
         poolContract,
         pairAddresses,
@@ -200,6 +202,7 @@ describe("Price Oracle", function () {
     it("TWAP: price decreased in a short time", async function () {
       const {
         busd,
+        eth,
         owner,
         pairAddresses,
         uniswapRouter,
@@ -234,6 +237,7 @@ describe("Price Oracle", function () {
     it("TWAP: price decreased in a long time", async function () {
       const {
         busd,
+        eth,
         owner,
         pairAddresses,
         uniswapRouter,
