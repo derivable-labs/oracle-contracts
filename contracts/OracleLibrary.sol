@@ -25,7 +25,7 @@ library OracleLibrary {
         require(self.blockTimestamp == 0, "initialized");
         (uint priceCumulative, uint32 blockTimestamp) =
             UniswapV2OracleLibrary.currentCumulativePrice(address(pair), baseToken0);
-        self.basePriceCumulative = uint224(priceCumulative);
+        self.basePriceCumulative = priceCumulative;
         self.blockTimestamp = blockTimestamp;
     }
 
@@ -87,7 +87,7 @@ library OracleLibrary {
             twap.base = self.baseTWAP;
         }
 
-        uint256 totalSupply = IUniswapV2Pair(pair).totalSupply();
+        uint totalSupply = IUniswapV2Pair(pair).totalSupply();
         (uint r0, uint r1, ) = IUniswapV2Pair(pair).getReserves();
 
         twap.LP = FixedPoint.fraction(2 * Math.sqrt(r0 * r1), totalSupply).muluq(twap.base.sqrt());
