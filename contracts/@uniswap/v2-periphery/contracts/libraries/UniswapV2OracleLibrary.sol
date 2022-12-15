@@ -37,21 +37,33 @@ library UniswapV2OracleLibrary {
     // produces the cumulative price using counterfactuals to save gas and avoid a call to sync.
     function currentCumulativePrice(
         address pair,
-        bool token0
+        bool token0,
+        int decimalsOffset
     ) internal view returns (uint priceCumulative, uint32 blockTimestamp) {
         blockTimestamp = currentBlockTimestamp();
         priceCumulative = token0 ?
             IUniswapV2Pair(pair).price0CumulativeLast():
             IUniswapV2Pair(pair).price1CumulativeLast();
 
+        if (decimalsOffset > 0) {
+            priceCumulative *= 10**uint(decimalsOffset);
+        } else if (decimalsOffset < 0) {
+            priceCumulative /= 10**uint(-decimalsOffset);
+        }
+
         // if time has elapsed since the last update on the pair, mock the accumulated price values
-        (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast) = IUniswapV2Pair(pair).getReserves();
+        (uint112 r0, uint112 r1, uint32 blockTimestampLast) = IUniswapV2Pair(pair).getReserves();
         if (blockTimestampLast != blockTimestamp) {
             // subtraction overflow is desired
             uint32 timeElapsed = blockTimestamp - blockTimestampLast;
+            if (decimalsOffset > 0) {
+                priceCumulative *= 10**uint(decimalsOffset);
+            } else if (decimalsOffset < 0) {
+                priceCumulative /= 10**uint(-decimalsOffset);
+            }
             FixedPoint.uq112x112 memory price = token0 ?
-                FixedPoint.fraction(reserve1, reserve0):
-                FixedPoint.fraction(reserve0, reserve1);
+                FixedPoint.fraction(r1, r0):
+                FixedPoint.fraction(r0, r1);
             // addition overflow is desired
             // counterfactual
             priceCumulative += price._x * timeElapsed;
