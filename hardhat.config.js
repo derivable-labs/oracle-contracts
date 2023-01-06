@@ -6,18 +6,30 @@ module.exports = {
     compilers: [
       {
         version: "0.8.17",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 4294967295,
+          },
+        },
       },
       {
         version: "0.5.16",
         settings: {
           optimizer: {
             enabled: true,
-            runs: 999999,
+            runs: 4294967295,
           },
-        }
+        },
       },
       {
         version: "0.6.6",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 4294967295,
+          },
+        },
       },
     ],
   },
