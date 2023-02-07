@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: None
-pragma solidity ^0.8.0;
+pragma solidity =0.7.6;
 
 import "../OracleLibrary.sol";
 import "../PriceLibrary.sol";
 import "../@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "hardhat/console.sol";
+
+pragma abicoder v2;
 
 /**
     @title Fetch Price

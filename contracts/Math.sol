@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: None
-pragma solidity ^0.8.9;
+pragma solidity =0.7.6;
 
 // a library for performing various math operations
 // Copy from "@uniswap/v2-core/contracts/libraries/Math.sol" and change solidity version
