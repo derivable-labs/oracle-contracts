@@ -6,12 +6,11 @@ import "./@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "./@uniswap/v2-periphery/contracts/libraries/UniswapV2OracleLibrary.sol";
 import "./PriceLibrary.sol";
 import "./Math.sol";
-import "hardhat/console.sol";
 
 struct OracleStore {
     uint basePriceCumulative;
     uint32 blockTimestamp;
-    FixedPoint.uq112x112 baseTWAP;
+    uint224 baseTWAP;
 }
 
 library OracleLibrary {
@@ -70,7 +69,7 @@ library OracleLibrary {
             (basePriceCumulative, blockTimestamp) =
                 UniswapV2OracleLibrary.currentCumulativePrice(pair, baseToken0);
             if (blockTimestamp == self.blockTimestamp) {
-                twap.base = self.baseTWAP;
+                twap.base._x = self.baseTWAP;
             } else {
                 twap.base = FixedPoint.uq112x112(uint224(
                     (basePriceCumulative - self.basePriceCumulative) /
@@ -79,12 +78,12 @@ library OracleLibrary {
                 updated = OracleStore(
                     basePriceCumulative,
                     blockTimestamp,
-                    twap.base
+                    twap.base._x
                 );
             }
         } else {
             basePriceCumulative = self.basePriceCumulative;
-            twap.base = self.baseTWAP;
+            twap.base._x = self.baseTWAP;
         }
 
         uint totalSupply = IUniswapV2Pair(pair).totalSupply();
