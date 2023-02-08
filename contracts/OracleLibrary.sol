@@ -4,14 +4,9 @@ pragma solidity ^0.8.9;
 import "./@uniswap/lib/contracts/libraries/FixedPoint.sol";
 import "./@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "./@uniswap/v2-periphery/contracts/libraries/UniswapV2OracleLibrary.sol";
+import "./OracleStore.sol";
 import "./PriceLibrary.sol";
 import "./Math.sol";
-
-struct OracleStore {
-    uint basePriceCumulative;
-    uint32 blockTimestamp;
-    uint224 baseTWAP;
-}
 
 library OracleLibrary {
     using FixedPoint for FixedPoint.uq112x112;
