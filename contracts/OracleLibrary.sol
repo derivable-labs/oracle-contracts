@@ -11,7 +11,7 @@ import "hardhat/console.sol";
 struct OracleStore {
     uint basePriceCumulative;
     uint32 blockTimestamp;
-    FixedPoint.uq112x112 baseTWAP;
+    uint224 baseTWAP;
 }
 
 library OracleLibrary {
@@ -36,8 +36,8 @@ library OracleLibrary {
     )
         internal
         returns (
-            OraclePrice memory twap,
-            OraclePrice memory naive
+            uint224 twap,
+            uint224 naive
         )
     {
         OracleStore memory updated;
@@ -57,43 +57,37 @@ library OracleLibrary {
     )
         internal view
         returns (
-            OraclePrice memory twap,
-            OraclePrice memory naive,
+            uint224 twap,
+            uint224 naive,
             OracleStore memory updated
         )
     {
         require(self.blockTimestamp > 0, "uninitialized");
         uint basePriceCumulative;
-
         if (self.blockTimestamp < block.timestamp) {
             uint32 blockTimestamp;
             (basePriceCumulative, blockTimestamp) =
                 UniswapV2OracleLibrary.currentCumulativePrice(pair, baseToken0);
             if (blockTimestamp == self.blockTimestamp) {
-                twap.base = self.baseTWAP;
+                twap = self.baseTWAP;
             } else {
-                twap.base = FixedPoint.uq112x112(uint224(
+                twap = uint224(
                     (basePriceCumulative - self.basePriceCumulative) /
                     (blockTimestamp - self.blockTimestamp)
-                ));
+                );
                 updated = OracleStore(
                     basePriceCumulative,
                     blockTimestamp,
-                    twap.base
+                    twap
                 );
             }
         } else {
             basePriceCumulative = self.basePriceCumulative;
-            twap.base = self.baseTWAP;
+            twap = self.baseTWAP;
         }
-
-        uint totalSupply = IUniswapV2Pair(pair).totalSupply();
         (uint r0, uint r1, ) = IUniswapV2Pair(pair).getReserves();
 
-        twap.LP = FixedPoint.fraction(2 * Math.sqrt(r0 * r1), totalSupply).muluq(twap.base.sqrt());
-
         (uint rb, uint rq) = baseToken0 ? (r0, r1) : (r1, r0);
-        naive.base = FixedPoint.fraction(rq, rb);
-        naive.LP = FixedPoint.fraction(2 * rq, totalSupply);
+        naive = FixedPoint.fraction(rq, rb)._x;
     }
 }
