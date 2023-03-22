@@ -20,11 +20,11 @@ library OracleLibrary {
     function init(
         OracleStore storage self,
         address pair,
-        bool baseToken0
+        uint quoteTokenIndex
     ) internal {
         require(self.blockTimestamp == 0, "initialized");
         (uint priceCumulative, uint32 blockTimestamp) =
-            UniswapV2OracleLibrary.currentCumulativePrice(address(pair), baseToken0);
+            UniswapV2OracleLibrary.currentCumulativePrice(address(pair), quoteTokenIndex == 1);
         self.basePriceCumulative = priceCumulative;
         self.blockTimestamp = blockTimestamp;
     }
@@ -32,33 +32,33 @@ library OracleLibrary {
     function fetchPrice(
         OracleStore storage self,
         address pair,
-        bool baseToken0
+        uint quoteTokenIndex
     )
         internal
         returns (
             uint224 twap,
-            uint224 naive
+            uint224 spot
         )
     {
         OracleStore memory updated;
-        (twap, naive, updated) = peekPrice(self, pair, baseToken0);
+        (twap, spot, updated) = peekPrice(self, pair, quoteTokenIndex);
         if (self.blockTimestamp < updated.blockTimestamp) {
             self.basePriceCumulative = updated.basePriceCumulative;
             self.blockTimestamp = updated.blockTimestamp;
             self.baseTWAP = updated.baseTWAP;
         }
-        return (twap, naive);
+        return (twap, spot);
     }
 
     function peekPrice(
         OracleStore memory self,
         address pair,
-        bool baseToken0
+        uint quoteTokenIndex
     )
         internal view
         returns (
             uint224 twap,
-            uint224 naive,
+            uint224 spot,
             OracleStore memory updated
         )
     {
@@ -67,7 +67,7 @@ library OracleLibrary {
         if (self.blockTimestamp < block.timestamp) {
             uint32 blockTimestamp;
             (basePriceCumulative, blockTimestamp) =
-                UniswapV2OracleLibrary.currentCumulativePrice(pair, baseToken0);
+                UniswapV2OracleLibrary.currentCumulativePrice(pair, quoteTokenIndex == 1);
             if (blockTimestamp == self.blockTimestamp) {
                 twap = self.baseTWAP;
             } else {
@@ -87,7 +87,7 @@ library OracleLibrary {
         }
         (uint r0, uint r1, ) = IUniswapV2Pair(pair).getReserves();
 
-        (uint rb, uint rq) = baseToken0 ? (r0, r1) : (r1, r0);
-        naive = FixedPoint.fraction(rq, rb)._x;
+        (uint rb, uint rq) = quoteTokenIndex == 1 ? (r0, r1) : (r1, r0);
+        spot = FixedPoint.fraction(rq, rb)._x;
     }
 }
