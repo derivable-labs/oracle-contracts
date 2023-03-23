@@ -32,7 +32,8 @@ library OracleLibrary {
     function fetchPrice(
         OracleStore storage self,
         address pair,
-        uint quoteTokenIndex
+        uint quoteTokenIndex,
+        uint period
     )
         internal
         returns (
@@ -42,7 +43,8 @@ library OracleLibrary {
     {
         OracleStore memory updated;
         (twap, spot, updated) = peekPrice(self, pair, quoteTokenIndex);
-        if (self.blockTimestamp < updated.blockTimestamp) {
+        
+        if ((updated.blockTimestamp != 0) && (updated.blockTimestamp - self.blockTimestamp >= period)) {
             self.basePriceCumulative = updated.basePriceCumulative;
             self.blockTimestamp = updated.blockTimestamp;
             self.baseTWAP = updated.baseTWAP;

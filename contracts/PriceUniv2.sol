@@ -6,6 +6,8 @@ import "./OracleLibrary.sol";
 contract PriceUniv2 {
     using OracleLibrary for OracleStore;
 
+    uint public constant PERIOD = 1 minutes;
+
     mapping(address => mapping(uint => OracleStore)) s_stores;
     // s_stores[pool][quoteTokenIndex]
 
@@ -14,7 +16,7 @@ contract PriceUniv2 {
             s_stores[pool][quoteTokenIndex].init(pool, quoteTokenIndex);
         }
 
-        (twap, spot) = s_stores[pool][quoteTokenIndex].fetchPrice(pool, quoteTokenIndex);
+        (twap, spot) = s_stores[pool][quoteTokenIndex].fetchPrice(pool, quoteTokenIndex, PERIOD);
     }
 
     function peek(address pool, uint quoteTokenIndex) public view returns (uint224 twap, uint224 spot) {
