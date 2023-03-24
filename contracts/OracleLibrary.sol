@@ -11,7 +11,7 @@ import "hardhat/console.sol";
 struct OracleStore {
     uint basePriceCumulative;
     uint32 blockTimestamp;
-    FixedPoint.uq112x112 baseTWAP;
+    uint224 baseTWAP;
 }
 
 library OracleLibrary {
@@ -20,11 +20,11 @@ library OracleLibrary {
     function init(
         OracleStore storage self,
         address pair,
-        bool baseToken0
+        uint quoteTokenIndex
     ) internal {
         require(self.blockTimestamp == 0, "initialized");
         (uint priceCumulative, uint32 blockTimestamp) =
-            UniswapV2OracleLibrary.currentCumulativePrice(address(pair), baseToken0);
+            UniswapV2OracleLibrary.currentCumulativePrice(address(pair), quoteTokenIndex == 1);
         self.basePriceCumulative = priceCumulative;
         self.blockTimestamp = blockTimestamp;
     }
@@ -32,68 +32,64 @@ library OracleLibrary {
     function fetchPrice(
         OracleStore storage self,
         address pair,
-        bool baseToken0
+        uint quoteTokenIndex,
+        uint period
     )
         internal
         returns (
-            OraclePrice memory twap,
-            OraclePrice memory naive
+            uint224 twap,
+            uint224 spot
         )
     {
         OracleStore memory updated;
-        (twap, naive, updated) = peekPrice(self, pair, baseToken0);
-        if (self.blockTimestamp < updated.blockTimestamp) {
+        (twap, spot, updated) = peekPrice(self, pair, quoteTokenIndex);
+        
+        if ((updated.blockTimestamp != 0) && (updated.blockTimestamp - self.blockTimestamp >= period)) {
             self.basePriceCumulative = updated.basePriceCumulative;
             self.blockTimestamp = updated.blockTimestamp;
             self.baseTWAP = updated.baseTWAP;
         }
-        return (twap, naive);
+        return (twap, spot);
     }
 
     function peekPrice(
         OracleStore memory self,
         address pair,
-        bool baseToken0
+        uint quoteTokenIndex
     )
         internal view
         returns (
-            OraclePrice memory twap,
-            OraclePrice memory naive,
+            uint224 twap,
+            uint224 spot,
             OracleStore memory updated
         )
     {
         require(self.blockTimestamp > 0, "uninitialized");
         uint basePriceCumulative;
-
         if (self.blockTimestamp < block.timestamp) {
             uint32 blockTimestamp;
             (basePriceCumulative, blockTimestamp) =
-                UniswapV2OracleLibrary.currentCumulativePrice(pair, baseToken0);
+                UniswapV2OracleLibrary.currentCumulativePrice(pair, quoteTokenIndex == 1);
             if (blockTimestamp == self.blockTimestamp) {
-                twap.base = self.baseTWAP;
+                twap = self.baseTWAP;
             } else {
-                twap.base = FixedPoint.uq112x112(uint224(
+                twap = uint224(
                     (basePriceCumulative - self.basePriceCumulative) /
                     (blockTimestamp - self.blockTimestamp)
-                ));
+                );
                 updated = OracleStore(
                     basePriceCumulative,
                     blockTimestamp,
-                    twap.base
+                    twap
                 );
             }
         } else {
             basePriceCumulative = self.basePriceCumulative;
-            twap.base = self.baseTWAP;
+            twap = self.baseTWAP;
         }
-
-        uint totalSupply = IUniswapV2Pair(pair).totalSupply();
         (uint r0, uint r1, ) = IUniswapV2Pair(pair).getReserves();
 
-        twap.LP = FixedPoint.fraction(2 * Math.sqrt(r0 * r1), totalSupply).muluq(twap.base.sqrt());
-
-        (uint rb, uint rq) = baseToken0 ? (r0, r1) : (r1, r0);
-        naive.base = FixedPoint.fraction(rq, rb);
-        naive.LP = FixedPoint.fraction(2 * rq, totalSupply);
+        (uint rb, uint rq) = quoteTokenIndex == 1 ? (r0, r1) : (r1, r0);
+        spot = FixedPoint.fraction(rq, rb)._x;
     }
 }

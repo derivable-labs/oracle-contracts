@@ -2,8 +2,8 @@ const {
   time,
   loadFixture,
 } = require("@nomicfoundation/hardhat-network-helpers");
-const {expect} = require("chai");
-const {bn, calculateSwapToPrice, numberToWei, weiToNumber} = require("./utils");
+const { expect } = require("chai");
+const { bn, calculateSwapToPrice, numberToWei, weiToNumber } = require("./utils");
 
 const LARGE_VALUE =
   '0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'
@@ -57,31 +57,38 @@ describe("Price Oracle", function () {
     const pairAddresses = await uniswapFactory.allPairs(0)
 
     // deploy test price contract
-    const Lib = await ethers.getContractFactory("OracleLibrary");
-    const lib = await Lib.deploy();
-    await lib.deployed();
-    const TestPrice = await ethers.getContractFactory("TestPrice");
+    const TestPrice = await ethers.getContractFactory("PriceUniv2");
     const testpriceContract = await TestPrice.deploy()
     await testpriceContract.deployed();
 
     busd.approve(uniswapRouter.address, LARGE_VALUE);
     eth.approve(uniswapRouter.address, LARGE_VALUE);
 
+    const poolContract = new ethers.Contract(pairAddresses, require("@uniswap/v2-core/build/UniswapV2Pair.json").abi, signer)
+    
     // init pool store
-    const tx = await testpriceContract.testFetchPrice(pairAddresses, eth.address);
+    const tx = await testpriceContract.fetch(pairAddresses, getQuoteTokenIndex(poolContract, eth.address));
+    const tx1 = await testpriceContract.fetch(pairAddresses, getQuoteTokenIndex(poolContract, busd.address));
     await tx.wait(1);
+    await tx1.wait(1);
+
+    await time.increase(1);
 
     // get price before update price
     // base price = 1, naive price = 1, cumulative price = 1
-    const initPrice = formatFetchPriceResponse(await testpriceContract.callStatic.testFetchPrice(pairAddresses, eth.address));
+    const initPrice = formatFetchPriceResponse(await testpriceContract.callStatic.fetch(pairAddresses, getQuoteTokenIndex(poolContract, eth.address)));
+    const initPriceReverse = formatFetchPriceResponse(await testpriceContract.callStatic.fetch(pairAddresses, getQuoteTokenIndex(poolContract, busd.address)));
 
-    const poolContract = new ethers.Contract(pairAddresses, require("@uniswap/v2-core/build/UniswapV2Pair.json").abi, signer)
+    return { busd, eth, uniswapRouter, poolContract, owner, initPrice, pairAddresses, testpriceContract, initPriceReverse }
+  }
 
-    return {busd, eth, uniswapRouter, poolContract, owner, initPrice, pairAddresses, testpriceContract}
+  async function getQuoteTokenIndex(pool, base) {
+    const token0 = await pool.token0()
+    return token0 == base ? 1 : 0
   }
 
   function convertFixedToNumber(fixed) {
-    const unit = 1000;
+    const unit = 1000000;
 
     return bn(fixed)
       .mul(unit)
@@ -91,10 +98,8 @@ describe("Price Oracle", function () {
 
   function formatFetchPriceResponse(priceRes) {
     return {
-      twap_base: convertFixedToNumber(priceRes.twap.base[0]),
-      twap_LP: convertFixedToNumber(priceRes.twap.LP[0]),
-      naive_base: convertFixedToNumber(priceRes.naive.base[0]),
-      naive_LP: convertFixedToNumber(priceRes.naive.LP[0])
+      twap: convertFixedToNumber(priceRes.twap),
+      spot: convertFixedToNumber(priceRes.spot)
     }
   }
 
@@ -102,7 +107,7 @@ describe("Price Oracle", function () {
     return 100 * Math.abs(num1 - num2) / num1
   }
 
-  async function swapToSetPrice({account, poolContract, uniswapRouter, quoteToken, targetPrice}) {
+  async function swapToSetPrice({ account, poolContract, uniswapRouter, quoteToken, targetPrice }) {
     const [[r0, r1], token0, token1] = await Promise.all([
       poolContract.getReserves(),
       poolContract.token0(),
@@ -128,6 +133,15 @@ describe("Price Oracle", function () {
   }
 
   describe("Deployment", function () {
+    it("Reverse oracle", async function () {
+      const {
+        initPriceReverse,
+        initPrice
+      } = await loadFixture(deployPriceOracle);
+      expect((1/initPrice.spot).toFixed(6)).to.equal(initPriceReverse.spot.toString())
+      expect((1/initPrice.twap).toFixed(6)).to.equal(initPriceReverse.twap.toString())
+    })
+
     it("TWAP: price increased in a short time", async function () {
       const {
         busd,
@@ -151,16 +165,12 @@ describe("Price Oracle", function () {
 
       // get price after 10s
       await time.increase(10);
-      const price2 = formatFetchPriceResponse(await testpriceContract.callStatic.testFetchPrice(pairAddresses, eth.address));
-
+      const price2 = formatFetchPriceResponse(await testpriceContract.callStatic.fetch(pairAddresses, getQuoteTokenIndex(poolContract, eth.address)));
       // check the difference of twap price < difference of naive price
-      expect(getDiffPercent(initPrice.twap_base, price2.twap_base)).to.lessThan(getDiffPercent(initPrice.naive_base, price2.naive_base));
-      expect(getDiffPercent(initPrice.twap_LP, price2.twap_LP)).to.lessThan(getDiffPercent(initPrice.naive_LP, price2.naive_LP));
+      expect(getDiffPercent(initPrice.twap, price2.twap)).to.lessThan(getDiffPercent(initPrice.spot, price2.spot));
 
-      expect(price2.twap_base).to.equal(1348.409);
-      expect(price2.twap_LP).to.equal(73.451);
-      expect(price2.naive_base).to.equal(1600);
-      expect(price2.naive_LP).to.equal(80.01);
+      expect(price2.twap).to.equal(1348.409092);
+      expect(price2.spot).to.equal(1600);
     });
 
     it("TWAP: price increased in a long time", async function () {
@@ -187,16 +197,12 @@ describe("Price Oracle", function () {
 
       // get price after 10s
       await time.increase(100000);
-      const price2 = formatFetchPriceResponse(await testpriceContract.callStatic.testFetchPrice(pairAddresses, eth.address));
-
+      const price2 = formatFetchPriceResponse(await testpriceContract.callStatic.fetch(pairAddresses, getQuoteTokenIndex(poolContract, eth.address)));
       // check the difference of twap price < difference of naive price
-      expect(getDiffPercent(initPrice.twap_base, price2.twap_base)).to.lessThan(getDiffPercent(initPrice.naive_base, price2.naive_base));
-      expect(getDiffPercent(initPrice.twap_LP, price2.twap_LP)).to.lessThan(getDiffPercent(initPrice.naive_LP, price2.naive_LP));
+      expect(getDiffPercent(initPrice.twap, price2.twap)).to.lessThan(getDiffPercent(initPrice.spot, price2.spot));
 
-      expect(price2.twap_base).to.equal(1599.715);
-      expect(price2.twap_LP).to.equal(80.003);
-      expect(price2.naive_base).to.equal(1600);
-      expect(price2.naive_LP).to.equal(80.01);
+      expect(price2.twap).to.equal(1599.715994);
+      expect(price2.spot).to.equal(1600);
     });
 
     it("TWAP: price decreased in a short time", async function () {
@@ -222,16 +228,12 @@ describe("Price Oracle", function () {
 
       // get price after 10s
       await time.increase(10);
-      const price2 = formatFetchPriceResponse(await testpriceContract.callStatic.testFetchPrice(pairAddresses, eth.address));
-
+      const price2 = formatFetchPriceResponse(await testpriceContract.callStatic.fetch(pairAddresses, getQuoteTokenIndex(poolContract, eth.address)));
       // check the difference of twap price < difference of naive price
-      expect(getDiffPercent(initPrice.twap_base, price2.twap_base)).to.lessThan(getDiffPercent(initPrice.naive_base, price2.naive_base));
-      expect(getDiffPercent(initPrice.twap_LP, price2.twap_LP)).to.lessThan(getDiffPercent(initPrice.naive_LP, price2.naive_LP));
+      expect(getDiffPercent(initPrice.twap, price2.twap)).to.lessThan(getDiffPercent(initPrice.spot, price2.spot));
 
-      expect(price2.twap_base).to.equal(1268.763);
-      expect(price2.twap_LP).to.equal(71.268);
-      expect(price2.naive_base).to.equal(700);
-      expect(price2.naive_LP).to.equal(52.936);
+      expect(price2.twap).to.equal(1268.763075);
+      expect(price2.spot).to.equal(700);
     });
 
     it("TWAP: price decreased in a long time", async function () {
@@ -257,12 +259,9 @@ describe("Price Oracle", function () {
 
       // get price after 10s
       await time.increase(100000);
-      const price2 = formatFetchPriceResponse(await testpriceContract.callStatic.testFetchPrice(pairAddresses, eth.address));
-
-      expect(price2.twap_base).to.equal(700.642);
-      expect(price2.twap_LP).to.equal(52.96);
-      expect(price2.naive_base).to.equal(700);
-      expect(price2.naive_LP).to.equal(52.936);
+      const price2 = formatFetchPriceResponse(await testpriceContract.callStatic.fetch(pairAddresses, getQuoteTokenIndex(poolContract, eth.address)));
+      expect(price2.twap).to.equal(700.64204);
+      expect(price2.spot).to.equal(700);
     });
   });
 });
